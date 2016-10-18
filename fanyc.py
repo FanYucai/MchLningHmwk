@@ -1,3 +1,5 @@
+# coding=utf-8
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -14,7 +16,7 @@ def genDataInRand(num=20, xrange=3, yrange=1, sigma=0.05):
     s = addGaussian(s.shape[0], s, sigma)
     return t, s
 
-def genData(num=20, xrange=3, yrange=1, sigma=0.05):
+def genData(num=20, xrange=1, yrange=1, sigma=0.1):
     interv = xrange*1.0/num
     t = np.arange(0, xrange, interv)
     s = yrange*np.sin(2*np.pi*t)
@@ -27,8 +29,6 @@ def calWithWeight(x, weight, max_power):
         sum = 0.0
         for i in range(0, max_power+1):
             sum += 1.0*np.power(iter_x, i)*weight[i]
-        print 'sum:'
-        print sum
         y.append(sum)
     return y
 
@@ -56,46 +56,102 @@ def minMul(t, s, max_power):
         B.append(sum_s)
     B = np.array(B)
 
-    print A.shape, B.shape
     weight_res = np.linalg.solve(A, B)
     #>>>>>>>>>>>>>>>>>>>
     x = np.arange(0, 3, 0.01)
     #>>>>>>>>>>>>>>>>>>>
-
-    # print weigh_res.shape
-    # print weigh_res
-
+    print 'weight_res:'
+    print weight_res
     y = calWithWeight(x, weight_res, max_power)
+    # return x, y
     return x, y
-#
-# def minMulPenalty(t, s, max_power):
-#     return
-#
-# def gradiantDescent(t, s, max_power, alpha, iter_times):
-#     return
-#
-# def conjGradiant(t, s, max_power, alpha, iter_times):
-#     return
-#
-# def otherFunc()
-#     return
+
+def calSingleCha(xi, yi, weight, max_power): #weight.shape = power+1
+    res = 0
+    for w in range(0, max_power+1):
+        res += np.power(xi, w)*weight[w]
+    res -= yi
+    return res
+
+def calJ(x, y, weight, max_power):
+    J = 0
+    for i in range(0, x.shape[0]):
+        xi = x[i]
+        yi = y[i]
+        J += np.power(calSingleCha(xi, yi, weight, max_power), 2)
+    return J
+
+def gradiantDescent(t, s, max_power, alpha=0.01, iter_times=10000):
+    #初始化权重
+    weight = 200*np.random.random(size=max_power+1)-100
+    epsilon = 0.001
+    cuJ = 0
+    preJ = calJ(t, s, weight, max_power)
+    num = len(t)
+
+    while np.abs(preJ-cuJ)>epsilon and iter_times>0:
+        iter_times -= 1
+        preJ = cuJ
+        for j in range(0, max_power+1):
+            sum = 0
+            for i in range(0, num):
+                sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
+            weight[j] = weight[j] - alpha*sum
+        cuJ = calJ(t, s, weight, max_power)
+        print iter_times, ' :', cuJ
+
+    if iter_times < 0 :
+        print "Diversed..try again"
+
+    x = np.arange(0, 3, 0.01)
+    y = calWithWeight(x, weight, max_power)
+    return x, y
+
+def conjGradiant(t, s, max_power, alpha=0.01, iter_times=10000):
+    weight = 200*np.random.random(size=max_power+1)-100
+    epsilon = 0.001
+    cuJ = 0
+    preJ = calJ(t, s, weight, max_power)
+    num = len(t)
+
+    while np.abs(preJ-cuJ)>epsilon and iter_times>0:
+        iter_times -= 1
+        preJ = cuJ
+        for j in range(0, max_power+1):
+            sum = 0
+            for i in range(0, num):
+                sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
+            weight[j] = weight[j] - alpha*sum
+        cuJ = calJ(t, s, weight, max_power)
+        print iter_times, ' :', cuJ
+
+    if iter_times < 0 :
+        print "Diversed..try again"
+
+    x = np.arange(0, 3, 0.01)
+    y = calWithWeight(x, weight, max_power)
+    return x, y
 
 if __name__=="__main__":
     # data_num, data_xr, data_yr, data_thetaoff, data_sigma, data_yoff
 
-    t, s = genData(50)
-    plt.plot(t, s, 'go')
+    t, s = genData(100)
+    plt.plot(t, s, 'g.')
 
-    base_t = np.arange(0, 3, 0.001)
+    base_t = np.arange(0, 1, 0.001)
     base_s = np.sin(2 * np.pi * base_t)
 
-    plt.axis([0, 3, -1.5, 1.5])
+    plt.axis([0, 1, -2, 2])
     plt.plot(base_t, base_s, 'r-')
     # plt.plot(np.arange(0, data_xr, 0.01), 5*np.sin(2*np.pi*t+data_theta)+data_yoff, 'g-')
 
-    minMul_t, minMul_s = minMul(t, s, 20)
-
+    minMul_t, minMul_s = minMul(t, s, 9)
     plt.plot(minMul_t, minMul_s, 'b-')
+
+    # grad_t, grad_s = gradiantDescent(t, s, 9, minMul_weight)
+    # grad_t, grad_s = gradiantDescentRand(t, s, 8)
+    grad_t, grad_s = gradiantDescent(t, s, 9)
+    plt.plot(grad_t, grad_s, 'pink')
 
     plt.show()
 
