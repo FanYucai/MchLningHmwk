@@ -71,10 +71,10 @@ def calJ(x, y, weight, max_power):
         J += np.power(calSingleCha(xi, yi, weight, max_power), 2)
     return J
 
-def gradientDescent(t, s, max_power, alpha=0.1, iter_times=10000):
+def gradientDescent(t, s, max_power, alpha=0.1, iter_times=100000):
     #初始化权重
     weight = 200*np.random.random(size=max_power+1)-100
-    epsilon = 1e-5
+    epsilon = 1e-6
     cuJ = 0
     preJ = calJ(t, s, weight, max_power)
     num = len(t)
@@ -98,14 +98,14 @@ def gradientDescent(t, s, max_power, alpha=0.1, iter_times=10000):
     return x, y
 
 
-def gradientDescentP (t, s, max_power, alpha=0.1, iter_times=10000):
+def gradientDescentP (t, s, max_power, alpha=0.1, iter_times=100000):
     #初始化权重
     weight = 200*np.random.random(size=max_power+1)-100
-    epsilon = 1e-5
+    epsilon = 1e-6
     cuJ = 0
     preJ = calJ(t, s, weight, max_power)
     num = len(t)
-    lam = 0.1
+    lam = 0.01
 
     while np.abs(preJ-cuJ)>epsilon and iter_times>0:
         iter_times -= 1
@@ -158,9 +158,9 @@ def ConjGrad(t, s, weight, max_power):
             print "alpha:", alpha
             w = w + alpha * p
             j += 1
-        print 'w: ', w
+        # print 'w: ', w
         print '------'
-
+        print calJ(t, s, w, max_power)
         #计算beta
         r = -Jacobian(t, s, w, max_power)
         betaBottom = betaTop
@@ -190,7 +190,7 @@ def Hessian(t, max_power):
                 sum += np.power(t[j], row+col)
             step_dd_row.append(sum)
         step_dd.append(step_dd_row)
-    print step_dd
+    # print step_dd
     return np.array(step_dd)
 
 def Jacobian(t, s, weight, max_power):
@@ -215,7 +215,7 @@ def conjGradient(t, s, max_power):
 if __name__=="__main__":
     base_t = np.arange(0, 1, 0.001)
     base_s = np.sin(2 * np.pi * base_t)
-    t, s = genData(50)
+    t, s = genData(100)
 
     plt.figure(1)
 
