@@ -213,7 +213,6 @@ def conjGradient(t, s, max_power):
     return x, y
 
 if __name__=="__main__":
-    # data_num, data_xr, data_yr, data_thetaoff, data_sigma, data_yoff
     base_t = np.arange(0, 1, 0.001)
     base_s = np.sin(2 * np.pi * base_t)
     t, s = genData(50)
