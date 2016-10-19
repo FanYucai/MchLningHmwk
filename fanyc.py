@@ -71,7 +71,7 @@ def calJ(x, y, weight, max_power):
         J += np.power(calSingleCha(xi, yi, weight, max_power), 2)
     return J
 
-def gradientDescent(t, s, max_power, alpha=0.1, iter_times=100000):
+def gradientDescent(t, s, max_power, alpha=0.5, iter_times=20000):
     #初始化权重
     weight = 200*np.random.random(size=max_power+1)-100
     epsilon = 1e-6
@@ -98,7 +98,7 @@ def gradientDescent(t, s, max_power, alpha=0.1, iter_times=100000):
     return x, y
 
 
-def gradientDescentP (t, s, max_power, alpha=0.1, iter_times=100000):
+def gradientDescentP (t, s, max_power, alpha=0.5, iter_times=20000):
     #初始化权重
     weight = 200*np.random.random(size=max_power+1)-100
     epsilon = 1e-6
@@ -178,6 +178,86 @@ def ConjGrad(t, s, weight, max_power):
         i +=1
     return w
 
+def ConjGradP(t, s, weight, max_power):
+    r = -Jacobian(t, s, weight, max_power)
+    p=r #futidu
+
+    betaTop = np.dot(r.transpose(),r)
+    beta0 = betaTop
+
+    i, k = 0, 0
+    iter_fir = 10000
+    epsilon = 1e-6
+    iter_sec = 100
+
+    nRestart = np.shape(weight)[0]
+    w = weight
+    print "w init:", w
+
+    while i<iter_fir and betaTop > epsilon**2*beta0:
+        j=0
+        dp = np.dot(p.transpose(),p)
+        alpha = (epsilon+1)**2
+
+        # Newton-Raphson ,在该搜索方向上移动到极小
+        while j<iter_sec and alpha**2 * dp > epsilon**2:
+            alpha = -np.dot(Jacobian(t, s, w, max_power).transpose(),p) / (np.dot(p.transpose(),np.dot(Hessian(t, max_power),p)))
+            print "alpha:", alpha
+            w = w + alpha * p
+            j += 1
+        # print 'w: ', w
+        print '------'
+        print calJ(t, s, w, max_power)
+        #计算beta
+        r = -Jacobian(t, s, w, max_power)
+        betaBottom = betaTop
+        betaTop = np.dot(r.transpose(),r)
+        beta = betaTop/betaBottom
+
+        #更新p
+        p = r + beta*p
+        k += 1
+
+        #重新开始
+        if k==nRestart or np.dot(r.transpose(),p) <= 0:
+            p = r
+            k = 0
+        i +=1
+    return w
+
+
+def HessianP(t, max_power):
+    step_dd = []
+    num = t.shape[0]
+    lam = 0.1
+    thetaNum = max_power+1
+    for row in range(0, thetaNum):
+        step_dd_row = []
+        for col in range(0, thetaNum):
+            sum = 0
+            if col == row:
+                sum += lam
+            for j in range(0, num):
+                sum += np.power(t[j], row+col)
+            step_dd_row.append(sum)
+        step_dd.append(step_dd_row)
+    # print step_dd
+    return np.array(step_dd)
+
+def JacobianP(t, s, weight, max_power):
+    # delta J(theta) Jacobian
+    step_d = []
+    lam = 0.1
+    num = t.shape[0]
+    thetaNum = max_power+1
+    for j in range(0, thetaNum):
+        sum = 0
+        for i in range(0, num):
+            sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
+        step_d.append(sum+lam*np.abs(weight[j]))
+    return np.array(step_d)
+
+
 def Hessian(t, max_power):
     step_dd = []
     num = t.shape[0]
@@ -212,45 +292,60 @@ def conjGradient(t, s, max_power):
     y = calWithWeight(x, weight, max_power)
     return x, y
 
+def conjGradientP(t, s, max_power):
+    weight = 200*np.random.random(size=max_power+1)-100
+    x = np.arange(0, 3, 0.01)
+    weight = ConjGradP(t, s, weight, max_power)
+    y = calWithWeight(x, weight, max_power)
+    return x, y
+
 if __name__=="__main__":
     base_t = np.arange(0, 1, 0.001)
     base_s = np.sin(2 * np.pi * base_t)
-    t, s = genData(100)
+    t, s = genData(20)
 
     plt.figure(1)
 
-    plt.subplot(221)
+    plt.subplot(231)
     plt.axis([0, 1, -2, 2])
     plt.plot(t, s, 'g.')
-    plt.plot(base_t, base_s, 'black')
+    plt.plot(base_t, base_s, 'pink')
     minMul_t, minMul_s = minMul(t, s, 7)
-    plt.plot(minMul_t, minMul_s, 'r')
+    plt.plot(minMul_t, minMul_s, 'black')
     plt.title('Least Square')
 
-    plt.subplot(222)
+    plt.subplot(232)
     plt.axis([0, 1, -2, 2])
     plt.plot(t, s, 'g.')
-    plt.plot(base_t, base_s, 'black')
+    plt.plot(base_t, base_s, 'pink')
     # grad_t, grad_s = gradientDescent(t, s, 9, minMul_weight)
     grad_t, grad_s = gradientDescent(t, s, 7)
     plt.plot(grad_t, grad_s, 'b')
     plt.title('Grad Descent(without penalty)')
 
-    plt.subplot(223)
+    plt.subplot(233)
     plt.axis([0, 1, -2, 2])
     plt.plot(t, s, 'g.')
-    plt.plot(base_t, base_s, 'black')
+    plt.plot(base_t, base_s, 'pink')
     conj_t, conj_s = conjGradient(t, s, 7)
     plt.plot(conj_t, conj_s, 'r')
     plt.title('Conj Gradient')
 
-    plt.subplot(224)
+    plt.subplot(234)
     plt.axis([0, 1, -2, 2])
     plt.plot(t, s, 'g.')
-    plt.plot(base_t, base_s, 'black')
+    plt.plot(base_t, base_s, 'pink')
     gradP_t, gradP_s = gradientDescentP(t, s, 7)
     plt.plot(gradP_t, gradP_s, 'b')
     plt.title('Gradient Descent with Penalty')
+
+    plt.subplot(235)
+    plt.axis([0, 1, -2, 2])
+    plt.plot(t, s, 'g.')
+    plt.plot(base_t, base_s, 'pink')
+    conjP_t, conjP_s = conjGradientP(t, s, 7)
+    plt.plot(conjP_t, conjP_s, 'r')
+    plt.title('Conj Gradient with Penalty')
 
     plt.show()
 
