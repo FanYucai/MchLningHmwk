@@ -1,7 +1,10 @@
 # coding=utf-8
-import random
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+def sigmoid(s):
+    return 1.0/(1+np.power(np.e, -s))
 
 def addGaussian(num, s, sigma): # mu=0
     mu = 0
@@ -9,19 +12,25 @@ def addGaussian(num, s, sigma): # mu=0
     s_res = s + offset_Guassian
     return s_res
 
-def genData(num=20, xrange=1, yrange=1, sigma=0.1):
-    interv = xrange*1.0/num
-    t = np.arange(0, xrange, interv)
-    s = yrange*np.sin(2*np.pi*t)
-    s = addGaussian(s.shape[0], s, sigma)
-    return t, s
+def judgeD(Dx, Dy):
+    if  np.sin(2*np.pi*Dx) < Dy:
+        return 1
+    else:
+        return 0
+def genData(num=20):
+    # s = addGaussian(s.shape[0], s, sigma)
+    Dx = np.random.random(size=num)
+    Dy = 4*np.random.random(size=num)-2
 
-def calWithWeight(x, weight, max_power):
+    # negativeDx = np.random.random(size=20)
+    return Dx, Dy
+
+def calWiththeta(x, theta):
     y = []
     for iter_x in x:
         sum = 0.0
-        for i in range(0, max_power+1):
-            sum += 1.0*np.power(iter_x, i)*weight[i]
+        for i in range(0, 3):
+            sum += np.power(iter_x, i)*theta[i]
         y.append(sum)
     return y
 
@@ -48,94 +57,80 @@ def minMul(t, s, max_power):
         B.append(sum_s)
     B = np.array(B)
 
-    weight_res = np.linalg.solve(A, B)
+    theta_res = np.linalg.solve(A, B)
     x = np.arange(0, 3, 0.01)
-    print 'weight_res:'
-    print weight_res
-    y = calWithWeight(x, weight_res, max_power)
+    print 'theta_res:'
+    print theta_res
+    y = calWiththeta(x, theta_res, max_power)
     # return x, y
     return x, y
 
-def calSingleCha(xi, yi, weight, max_power): #weight.shape = power+1
-    res = 0
-    for w in range(0, max_power+1):
-        res += np.power(xi, w)*weight[w]
-    res -= yi
-    return res
+def h(x1, x2, theta):
+    return theta[0]+theta[1]*x1+theta[2]*x2
 
-def calJ(x, y, weight, max_power):
+def calJ(x1, x2, theta):
     J = 0
-    for i in range(0, x.shape[0]):
-        xi = x[i]
-        yi = y[i]
-        J += np.power(calSingleCha(xi, yi, weight, max_power), 2)
-    return J
+    for i in range(0, x1.shape[0]):
+        x1i = x1[i]
+        x2i = x2[i]
+        yi = judgeD(x1i, x2i)
+        J += yi*np.log(sigmoid(h(x1i, x2i, theta)))
+        J += (1-yi)*np.log(1-h(x1i, x2i, theta))
+    return -J
 
-def gradientDescent(t, s, max_power, alpha=0.5, iter_times=20000):
-    #初始化权重
-    weight = 200*np.random.random(size=max_power+1)-100
+def gradientDescent(t, s, alpha=0.01, iter_times=20000):
+    theta = 20*np.random.random(size=3)-10
+    print theta
     epsilon = 1e-6
     cuJ = 0
-    preJ = calJ(t, s, weight, max_power)
+    preJ = calJ(t, s, theta)
     num = len(t)
+    # thetaNum = len(theta)
+    thetaNum = 3
 
-    while np.abs(preJ-cuJ)>epsilon and iter_times>0:
+    # while np.abs(preJ-cuJ)>epsilon and iter_times>0:
+    while iter_times>0:
         iter_times -= 1
         preJ = cuJ
-        for j in range(0, max_power+1):
+        for j in range(0, thetaNum):
             sum = 0
             for i in range(0, num):
-                sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
-            weight[j] = weight[j] - alpha*sum
-        cuJ = calJ(t, s, weight, max_power)
-        print iter_times, ' :', cuJ
+                if j==0:
+                    # print sigmoid(h(t[i], s[i], theta)), theta
+                    sum += sigmoid(h(t[i], s[i], theta))-judgeD(t[i], s[i])
+                else:
+                    sum += t[i]*(sigmoid(h(t[i], s[i], theta))-judgeD(t[i], s[i]))
 
-    if iter_times < 0 :
+            theta[j] = theta[j] - alpha*sum
+        cuJ = calJ(t, s, theta)
+        print iter_times, ':', cuJ
+
+    if iter_times <= 0 :
         print "Exhausted..try again"
 
     x = np.arange(0, 3, 0.01)
-    y = calWithWeight(x, weight, max_power)
+    y = calWiththeta(x, theta)
     return x, y
-
-def Hessian(t, max_power):
-    step_dd = []
-    num = t.shape[0]
-    thetaNum = max_power+1
-    for row in range(0, thetaNum):
-        step_dd_row = []
-        for col in range(0, thetaNum):
-            sum = 0
-            for j in range(0, num):
-                sum += np.power(t[j], row+col)
-            step_dd_row.append(sum)
-        step_dd.append(step_dd_row)
-    # print step_dd
-    return np.array(step_dd)
-
-def Jacobian(t, s, weight, max_power):
-    # delta J(theta) Jacobian
-    step_d = []
-    num = t.shape[0]
-    thetaNum = max_power+1
-    for j in range(0, thetaNum):
-        sum = 0
-        for i in range(0, num):
-            sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
-        step_d.append(sum)
-    return np.array(step_d)
-
 
 if __name__=="__main__":
     base_t = np.arange(0, 1, 0.001)
     base_s = np.sin(2 * np.pi * base_t)
-    t, s = genData(20)
+    Dx, Dy = genData(30)
+
+    plt.figure(1)
 
     plt.axis([0, 1, -2, 2])
-    plt.plot(t, s, 'g.')
+    for i in range(len(Dx)):
+        dx = Dx[i]
+        dy = Dy[i]
+        if judgeD(dx, dy) == 1:
+            plt.plot(dx, dy, 'bo')
+        else:
+            plt.plot(dx, dy, 'ro')
+
     plt.plot(base_t, base_s, 'pink')
-    minMul_t, minMul_s = minMul(t, s, 7)
-    plt.plot(minMul_t, minMul_s, 'black')
-    plt.title('Least Square')
+    grad_t, grad_s = gradientDescent(Dx, Dy, 7)
+    plt.plot(grad_t, grad_s, 'g')
 
     plt.show()
 
