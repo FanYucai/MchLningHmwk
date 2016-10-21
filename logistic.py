@@ -88,8 +88,8 @@ def gradientDescent(t, s, alpha=0.01, iter_times=20000):
     # thetaNum = len(theta)
     thetaNum = 3
 
-    # while np.abs(preJ-cuJ)>epsilon and iter_times>0:
-    while iter_times>0:
+    while np.abs(preJ-cuJ)>epsilon and iter_times>0:
+    # while iter_times>0:
         iter_times -= 1
         preJ = cuJ
         for j in range(0, thetaNum):
