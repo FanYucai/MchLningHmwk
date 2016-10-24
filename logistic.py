@@ -13,10 +13,11 @@ def addGaussian(num, s, sigma): # mu=0
     return s_res
 
 def judgeD(Dx, Dy):
-    if  np.sin(1*np.pi*Dx) < Dy:
+    if  1.8-Dx*2.0 < Dy:
         return 1
     else:
         return 0
+
 def genData(num=20):
     Dx = 1.4*np.random.random(size=num)+0.3
     Dy = 4*np.random.random(size=num)-2
@@ -48,9 +49,9 @@ def calJ(x1, x2, theta):
         J += (1-yi)*np.log(1-h(x1i, x2i, theta))
     return -J
 
-def gradientDescent(dataMatIn, labelMatIn, dataNum, alpha=0.001, iter_times=10000):
-    # theta = 10*np.random.random(size=3)-10
-    theta = np.ones((3, 1))
+def gradientDescent(dataMatIn, labelMatIn, dataNum, alpha=0.01, iter_times=10000):
+    theta = np.mat(10*np.random.random(size=3)-10).transpose()
+    # theta = np.ones((3, 1))
     print theta
     dataMat = np.mat(dataMatIn)
     print dataMat
@@ -72,7 +73,8 @@ if __name__=="__main__":
     # base_t = np.arange(-10, 10, 0.001)
     dataNum = 30
     base_t = np.arange(0, 3, 0.001)
-    base_s = np.sin(1 * np.pi * base_t)
+    base_s = 1.8-2.0*base_t
+    # base_s = np.sin(1 * np.pi * base_t)
     dataMat, labelMat = genData(dataNum)
     # plt.plot(base_t, sigmoid(base_t))
 
