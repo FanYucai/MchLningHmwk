@@ -49,7 +49,7 @@ def calJ(x1, x2, theta):
         J += (1-yi)*np.log(1-h(x1i, x2i, theta))
     return -J
 
-def gradientDescent(dataMatIn, labelMatIn, dataNum, alpha=0.01, iter_times=10000):
+def gradientDescent_linear_2attrs(dataMatIn, labelMatIn, dataNum, alpha=0.01, iter_times=10000):
     theta = np.mat(10*np.random.random(size=3)-10).transpose()
     # theta = np.ones((3, 1))
     print theta
@@ -88,7 +88,7 @@ if __name__=="__main__":
             plt.plot(dataMat[i][1], dataMat[i][2], 'ro')
 
     plt.plot(base_t, base_s, 'pink')
-    grad_t, grad_s = gradientDescent(dataMat, labelMat, dataNum)
+    grad_t, grad_s = gradientDescent_linear_2attrs(dataMat, labelMat, dataNum)
     plt.plot(grad_t, grad_s, 'g')
 
     plt.show()
