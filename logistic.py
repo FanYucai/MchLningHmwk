@@ -24,8 +24,10 @@ def genData(num=20):
     dataMat = []
     labelMat = []
     for i in range(num):
-        dataMat.append([1.0, Dx[i], Dy[i]])
         labelMat.append(judgeD(Dx[i], Dy[i]))
+        Dy = addGaussian(num, Dy, 0.05)
+        Dx = addGaussian(num, Dx, 0.05)
+        dataMat.append([1.0, Dx[i], Dy[i]])
     return dataMat, labelMat
 
 def calWiththeta(x, theta):

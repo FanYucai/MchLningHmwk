@@ -1,321 +1,162 @@
 # coding=utf-8
-import random
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-def addGaussian(num, s, sigma): # mu=0
-    mu = 0
-    offset_Guassian = np.random.normal(mu, sigma, num)
-    s_res = s + offset_Guassian
-    return s_res
+def sigmoid(s):
+    return 1.0/(1+np.power(np.e, -s))
 
-def genData(num=20, xrange=1, yrange=1, sigma=0.1):
-    interv = xrange*1.0/num
-    t = np.arange(0, xrange, interv)
-    s = yrange*np.sin(2*np.pi*t)
-    s = addGaussian(s.shape[0], s, sigma)
-    return t, s
+def calh(theta, thetaNum, data):
+    h = 0
+    for i in range(len(data)):
+        h += theta[i][0]*data[i]
+    return h
 
-def calWithWeight(x, weight, max_power):
-    y = []
-    for iter_x in x:
-        sum = 0.0
-        for i in range(0, max_power+1):
-            sum += 1.0*np.power(iter_x, i)*weight[i]
-        y.append(sum)
-    return y
+def genDataMat(dataMat, originThetaNum, thetaNum):
+    newDataMat = []
+    dataNum = len(dataMat)
+    for n in range(dataNum):
+        newRow = []
+        for i in range(originThetaNum):
+            for j in range(i+1):
+                newRow.append(dataMat[n][i]*dataMat[n][j])
+        newDataMat.append(newRow)
+    print len(newDataMat[0])
+    return newDataMat
 
-def minMul(t, s, max_power):
-    A = []
-    size = t.shape[0]
-    print size
+def gradientDescent(dataMatIn, labelMatIn, dataNum, xNum, order=2, alpha=0.01, iter_times=200):
+    thetaNum = 15
+    originThetaNum = 5
 
-    for k in range(0, max_power+1):
-        A_sub = []
-        for j in range(0, max_power+1):
-            sum_t = 0
-            for i in range(0, size):
-                sum_t += np.power(t[i], j+k)
-            A_sub.append(sum_t)
-        A.append(A_sub)
-    A = np.array(A)
+    theta = np.ones((thetaNum, 1))
 
-    B = []
-    for k in range(0, max_power+1):
-        sum_s = 0
-        for i in range(0, size):
-            sum_s += np.power(t[i], k)*s[i]
-        B.append(sum_s)
-    B = np.array(B)
+    dataMat = genDataMat(dataMatIn, originThetaNum, thetaNum)
 
-    weight_res = np.linalg.solve(A, B)
-    x = np.arange(0, 3, 0.01)
-    print 'weight_res:'
-    print weight_res
-    y = calWithWeight(x, weight_res, max_power)
-    # return x, y
-    return x, y
+    dataList = dataMat
+    dataMat = np.mat(dataMat)
+    labelMat = np.mat(labelMatIn).transpose()
 
-def calSingleCha(xi, yi, weight, max_power): #weight.shape = power+1
-    res = 0
-    for w in range(0, max_power+1):
-        res += np.power(xi, w)*weight[w]
-    res -= yi
-    return res
+    predLabelMat = []
 
-def calJ(x, y, weight, max_power):
-    J = 0
-    for i in range(0, x.shape[0]):
-        xi = x[i]
-        yi = y[i]
-        J += np.power(calSingleCha(xi, yi, weight, max_power), 2)
-    return J
+    for iter in range(iter_times):
+        afterSig = sigmoid(dataMat*theta)
+        theta = theta - alpha * dataMat.transpose()*(afterSig-labelMat)
+        print 'theta:', theta
 
-def gradientDescent(t, s, max_power, alpha=0.5, iter_times=20000):
-    #初始化权重
-    weight = 200*np.random.random(size=max_power+1)-100
-    epsilon = 1e-6
-    cuJ = 0
-    preJ = calJ(t, s, weight, max_power)
-    num = len(t)
+    thetaArray = np.array(theta)
 
-    while np.abs(preJ-cuJ)>epsilon and iter_times>0:
-        iter_times -= 1
-        preJ = cuJ
-        for j in range(0, max_power+1):
-            sum = 0
-            for i in range(0, num):
-                sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
-            weight[j] = weight[j] - alpha*sum
-        cuJ = calJ(t, s, weight, max_power)
-        print iter_times, ' :', cuJ
+    for i in range(dataNum):
+        res = calh(thetaArray, thetaNum, dataList[i])
+        res = sigmoid(res)
 
-    if iter_times < 0 :
-        print "Exhausted..try again"
+        if(res > 0.5):
+            predLabelMat.append(1)
+        else:
+            predLabelMat.append(0)
 
-    x = np.arange(0, 3, 0.01)
-    y = calWithWeight(x, weight, max_power)
-    return x, y
+    return predLabelMat
 
 
-def gradientDescentP (t, s, max_power, alpha=0.5, iter_times=20000):
-    #初始化权重
-    weight = 200*np.random.random(size=max_power+1)-100
-    epsilon = 1e-6
-    cuJ = 0
-    preJ = calJ(t, s, weight, max_power)
-    num = len(t)
-    lam = 0.01
-
-    while np.abs(preJ-cuJ)>epsilon and iter_times>0:
-        iter_times -= 1
-        preJ = cuJ
-        for j in range(0, max_power+1):
-            sum = 0
-            for i in range(0, num):
-                sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
-            weight[j] = weight[j] - alpha*(sum+lam*weight[j])
-        cuJ = calJ(t, s, weight, max_power)
-        print iter_times, ':', cuJ
-
-    if iter_times < 0 :
-        print "Exhausted..try again"
-
-    x = np.arange(0, 3, 0.01)
-    y = calWithWeight(x, weight, max_power)
-    return x, y
-
-def getNorm(g):
-    res = 0
-    for i in g:
-        res += i**2
-    return res
-
-def ConjGrad(t, s, weight, max_power):
-    r = -Jacobian(t, s, weight, max_power)
-    p=r #futidu
-
-    betaTop = np.dot(r.transpose(),r)
-    beta0 = betaTop
-
-    i, k = 0, 0
-    iter_fir = 10000
-    epsilon = 1e-6
-    iter_sec = 100
-
-    nRestart = np.shape(weight)[0]
-    w = weight
-    print "w init:", w
-
-    while i<iter_fir and betaTop > epsilon**2*beta0:
-        j=0
-        dp = np.dot(p.transpose(),p)
-        alpha = (epsilon+1)**2
-
-        # Newton-Raphson ,在该搜索方向上移动到极小
-        while j<iter_sec and alpha**2 * dp > epsilon**2:
-            alpha = -np.dot(Jacobian(t, s, w, max_power).transpose(),p) / (np.dot(p.transpose(),np.dot(Hessian(t, max_power),p)))
-            print "alpha:", alpha
-            w = w + alpha * p
-            j += 1
-        # print 'w: ', w
-        print '------'
-        print calJ(t, s, w, max_power)
-        #计算beta
-        r = -Jacobian(t, s, w, max_power)
-        betaBottom = betaTop
-        betaTop = np.dot(r.transpose(),r)
-        beta = betaTop/betaBottom
-
-        #更新p
-        p = r + beta*p
-        k += 1
-
-        #重新开始
-        if k==nRestart or np.dot(r.transpose(),p) <= 0:
-            p = r
-            k = 0
-        i +=1
-    return w
-
-def ConjGradP(t, s, weight, max_power):
-    r = -Jacobian(t, s, weight, max_power)
-    p=r #futidu
-
-    betaTop = np.dot(r.transpose(),r)
-    beta0 = betaTop
-
-    i, k = 0, 0
-    iter_fir = 10000
-    epsilon = 1e-6
-    iter_sec = 100
-
-    nRestart = np.shape(weight)[0]
-    w = weight
-    print "w init:", w
-
-    while i<iter_fir and betaTop > epsilon**2*beta0:
-        j=0
-        dp = np.dot(p.transpose(),p)
-        alpha = (epsilon+1)**2
-
-        # Newton-Raphson ,在该搜索方向上移动到极小
-        while j<iter_sec and alpha**2 * dp > epsilon**2:
-            alpha = -np.dot(Jacobian(t, s, w, max_power).transpose(),p) / (np.dot(p.transpose(),np.dot(Hessian(t, max_power),p)))
-            print "alpha:", alpha
-            w = w + alpha * p
-            j += 1
-        # print 'w: ', w
-        print '------'
-        print calJ(t, s, w, max_power)
-        #计算beta
-        r = -Jacobian(t, s, w, max_power)
-        betaBottom = betaTop
-        betaTop = np.dot(r.transpose(),r)
-        beta = betaTop/betaBottom
-
-        #更新p
-        p = r + beta*p
-        k += 1
-
-        #重新开始
-        if k==nRestart or np.dot(r.transpose(),p) <= 0:
-            p = r
-            k = 0
-        i +=1
-    return w
-
-
-def HessianP(t, max_power):
-    step_dd = []
-    num = t.shape[0]
+def gradientDescentP(dataMatIn, labelMatIn, dataNum, xNum, order=2, alpha=0.01, iter_times=200):
+    thetaNum = 15
+    originThetaNum = 5
     lam = 0.1
-    thetaNum = max_power+1
-    for row in range(0, thetaNum):
-        step_dd_row = []
-        for col in range(0, thetaNum):
-            sum = 0
-            if col == row:
-                sum += lam
-            for j in range(0, num):
-                sum += np.power(t[j], row+col)
-            step_dd_row.append(sum)
-        step_dd.append(step_dd_row)
-    # print step_dd
-    return np.array(step_dd)
 
-def JacobianP(t, s, weight, max_power):
-    # delta J(theta) Jacobian
-    step_d = []
-    lam = 0.1
-    num = t.shape[0]
-    thetaNum = max_power+1
-    for j in range(0, thetaNum):
-        sum = 0
-        for i in range(0, num):
-            sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
-        step_d.append(sum+lam*np.abs(weight[j]))
-    return np.array(step_d)
+    theta = np.ones((thetaNum, 1))
 
+    dataMat = genDataMat(dataMatIn, originThetaNum, thetaNum)
 
-def Hessian(t, max_power):
-    step_dd = []
-    num = t.shape[0]
-    thetaNum = max_power+1
-    for row in range(0, thetaNum):
-        step_dd_row = []
-        for col in range(0, thetaNum):
-            sum = 0
-            for j in range(0, num):
-                sum += np.power(t[j], row+col)
-            step_dd_row.append(sum)
-        step_dd.append(step_dd_row)
-    # print step_dd
-    return np.array(step_dd)
+    dataList = dataMat
+    dataMat = np.mat(dataMat)
+    labelMat = np.mat(labelMatIn).transpose()
 
-def Jacobian(t, s, weight, max_power):
-    # delta J(theta) Jacobian
-    step_d = []
-    num = t.shape[0]
-    thetaNum = max_power+1
-    for j in range(0, thetaNum):
-        sum = 0
-        for i in range(0, num):
-            sum += np.power(t[i], j)*(calSingleCha(t[i], s[i], weight, max_power))
-        step_d.append(sum)
-    return np.array(step_d)
+    predLabelMat = []
 
-def conjGradient(t, s, max_power):
-    weight = 200*np.random.random(size=max_power+1)-100
-    x = np.arange(0, 3, 0.01)
-    weight = ConjGrad(t, s, weight, max_power)
-    y = calWithWeight(x, weight, max_power)
-    return x, y
+    for iter in range(iter_times):
+        afterSig = sigmoid(dataMat*theta)
+        theta = theta - alpha * (dataMat.transpose()*(afterSig-labelMat)+lam*theta)
+        print 'theta:', theta
 
-def conjGradientP(t, s, max_power):
-    weight = 200*np.random.random(size=max_power+1)-100
-    x = np.arange(0, 3, 0.01)
-    weight = ConjGradP(t, s, weight, max_power)
-    y = calWithWeight(x, weight, max_power)
-    return x, y
+    thetaArray = np.array(theta)
+
+    for i in range(dataNum):
+        res = calh(thetaArray, thetaNum, dataList[i])
+        res = sigmoid(res)
+
+        if(res > 0.5):
+            predLabelMat.append(1)
+        else:
+            predLabelMat.append(0)
+
+    return predLabelMat
+
+def getData():
+    dataMat = []
+    labelMat = []
+    fr = open('data2.txt')
+    i = 0
+    for line in fr.readlines():
+        i = i+1
+        lineArr = line.strip().split(',')
+        # dataMat.append([1.0, float(lineArr[1]), float(lineArr[2]), float(lineArr[3]), float(lineArr[4])])
+        dataMat.append([1.0, float(lineArr[1]), float(lineArr[2]), float(lineArr[3]), float(lineArr[4])])
+        # if(lineArr[4] == 'Iris-setosa'):
+        if(lineArr[0] == 'L'):
+            labelMat.append(1)
+        else:
+            labelMat.append(0)
+    return i, dataMat, labelMat
+
+def getData_v():
+    dataMat = []
+    labelMat = []
+    fr = open('data3.txt')
+    i = 0
+    for line in fr.readlines():
+        i = i+1
+        lineArr = line.strip().split(',')
+        
+        dataMat.append([1.0, float(lineArr[1]), float(lineArr[2]), float(lineArr[3]), float(lineArr[4])])
+        if(lineArr[0] == 'L'):
+            labelMat.append(1)
+        else:
+            labelMat.append(0)
+    return i, dataMat, labelMat
+
 
 if __name__=="__main__":
-    base_t = np.arange(0, 1, 0.001)
-    base_s = np.sin(2 * np.pi * base_t)
-    t, s = genData(20)
+    xNum = 4
 
-    plt.figure(1)
-
-    plt.axis([0, 2, -2.5, 2.5])
+    dataNum, dataMat, labelMat = getData()
+    print len(dataMat), len(labelMat)
+    predLabelMat = gradientDescent(dataMat, labelMat, dataNum, xNum , 2)
+    corCnt = 0
     for i in range(dataNum):
-        if labelMat[i] == 1:
-            plt.plot(dataMat[i][1], dataMat[i][2], 'bo')
-        else:
-            plt.plot(dataMat[i][1], dataMat[i][2], 'ro')
+        if(labelMat[i] == predLabelMat[i]):
+            corCnt = corCnt + 1
+        print 'original:', labelMat[i], '-> predict as:', predLabelMat[i]
+    print "correctness is:", corCnt*1.0/dataNum*100, '%'
+    dataNum, dataMat, labelMat = getData_v()
+    for i in range(dataNum):
+        if(labelMat[i] == predLabelMat[i]):
+            corCnt = corCnt + 1
+        print 'original:', labelMat[i], '-> predict as:', predLabelMat[i]
+    print "correctness is:", corCnt*1.0/dataNum*100, '%'
 
-    plt.plot(base_t, base_s, 'pink')
-    grad_t, grad_s = gradientDescent_linear_2attrs(dataMat, labelMat, dataNum)
-    plt.plot(grad_t, grad_s, 'g')
-    plt.show()
 
+    dataNum, dataMat, labelMat = getData_v()
+    print len(dataMat), len(labelMat)
+    predLabelMat = gradientDescentP(dataMat, labelMat, dataNum, xNum , 2)
+    corCnt = 0
+    for i in range(dataNum):
+        if(labelMat[i] == predLabelMat[i]):
+            corCnt = corCnt + 1
+        print 'original:', labelMat[i], '-> predict as:', predLabelMat[i]
+    print "correctness is:", corCnt*1.0/dataNum*100, '%'
+    dataNum, dataMat, labelMat = getData()
+    for i in range(dataNum):
+        if(labelMat[i] == predLabelMat[i]):
+            corCnt = corCnt + 1
+        print 'original:', labelMat[i], '-> predict as:', predLabelMat[i]
+    print "correctness is:", corCnt*1.0/dataNum*100, '%'
 
