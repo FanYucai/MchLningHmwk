@@ -25,8 +25,8 @@ def genData(num=20):
     labelMat = []
     for i in range(num):
         labelMat.append(judgeD(Dx[i], Dy[i]))
-        Dy = addGaussian(num, Dy, 0.05)
-        Dx = addGaussian(num, Dx, 0.05)
+        Dy = addGaussian(num, Dy, 0.1)
+        Dx = addGaussian(num, Dx, 0.1)
         dataMat.append([1.0, Dx[i], Dy[i]])
     return dataMat, labelMat
 
