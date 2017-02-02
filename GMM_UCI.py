@@ -21,25 +21,30 @@ def phi(x, mu, cov):
         s = -1.0/2 * x_mu * np.linalg.inv(cov) * x_mu.T
         res = 1.0/((2*np.pi) * np.sqrt(np.linalg.det(cov))) * (np.power(np.e, s))
     else:
+        # s = -1.0/2 * x_mu * np.linalg.inv(cov) * x_mu.T
+        # while(s > 1e10):
+        #     s = s/2.
+        # cov = np.matrix([[np.random.random()*10, 0], [0, np.random.random()*10]])
+        # print "res^-1 =", (np.power(np.e, s)), "+", (2*np.pi) *np.sqrt(np.linalg.det(cov))
+        # res = (np.power(np.e, s))/((2*np.pi) * np.sqrt(-np.linalg.det(cov)))
+        mu = [np.matrix([np.random.random()*40., np.random.random()*40.]),
+          np.matrix([np.random.random()*40., np.random.random()*40.]),
+          np.matrix([np.random.random()*40., np.random.random()*40.])]
+        x_mu = x-mu[0]
+        cov += np.matrix([[np.random.random()*1e-6, 0], [0, 1e-6*np.random.random()]])
         s = -1.0/2 * x_mu * np.linalg.inv(cov) * x_mu.T
-        cov = np.matrix([[np.random.random()*10, 0], [0, np.random.random()*10]])
-        res = 1.0/((2*np.pi) *np.sqrt(np.linalg.det(cov))) * (np.power(np.e, s))
+        res = 1.0/((2*np.pi) * np.sqrt(np.linalg.det(cov))) * (np.power(np.e, s))
         print 's =', s
 
     return res
 def genData(dataNum=30):
-    xmean = np.random.random()*50
-    # print xmean
-    ymean = np.random.random()*50
-    xspan = np.random.random()*50
-    yspan = np.random.random()*50
-    mean = [xmean, ymean]
-    # cov = [[xspan, 0], [0, yspan]]
-    pandro = np.random.random()*20
-    pandrofa = np.random.random()*20
-    cov = [[xspan, pandro], [pandrofa, yspan]]
-    x, y = np.random.multivariate_normal(mean, cov, dataNum).T
-    return x, y
+    raw = np.loadtxt('haberman.txt',delimiter=',')
+    # print raw
+    x = raw[:, 1]
+    y = raw[:, 3]
+    labelMat = raw[:, 4]
+    # print x, y, labelMat
+    return x, y, labelMat
 
 def GMM(dataMat, gammaMat, clusterNum=3):
 
@@ -61,7 +66,7 @@ def GMM(dataMat, gammaMat, clusterNum=3):
     # gammaMat = np.matrix(gammaMat)
     Q = 0.
     preQ = 1.
-    epsilon = 1e-10
+    epsilon = 1e-12
 
     while True:
         print 'cov:', cov
@@ -155,41 +160,31 @@ if __name__=="__main__":
     # dataMat, labelMat = genData(dataNum)
     plt.figure(figsize=(12,6), dpi=80)
     plt.subplot(121)
-    x, y = genData(dataNum)
-    plt.plot(x, y, color='#408d40', linestyle='None', marker='o')
+    x, y, labelMat = genData(dataNum)
+    x = x*12.
+    y = y*30.
+    for i in range(len(x)):
+        xi = x[i]
+        yi = y[i]
+        # print xi, yi
+        if(labelMat[i] == 2):
+            # labelMat[i] = 2
+            plt.plot(xi, yi, color='#ffdf00', linestyle='None', marker='o')
+        if(labelMat[i] == 1):
+            # labelMat[i] = 1
+            plt.plot(xi, yi, 'ro')
+        if(labelMat[i] == 0):
+            # labelMat[i] = 0
+            plt.plot(xi, yi, color='#408d40', linestyle='None', marker='o')
+    plt.axis('equal')
 
     for i in range(len(x)):
         tempMat = []
         tempMat.append(x[i])
         tempMat.append(y[i])
         dataMat.append(tempMat)
-        labelMat.append(0)
         gammaMat.append([0.333,0.333,0.333])
 
-    x, y = genData(dataNum)
-    plt.plot(x, y, 'ro')
-    for i in range(len(x)):
-        tempMat = []
-        tempMat.append(x[i])
-        tempMat.append(y[i])
-        # print 'tempMat:', tempMat
-        dataMat.append(tempMat)
-        labelMat.append(1)
-        gammaMat.append([0.3333,0.3333,0.3333])
-
-    x, y = genData(dataNum)
-    plt.plot(x, y, color='#ffdf00', linestyle='None', marker='o')
-    # plt.plot(x, y, 'k+')
-
-    for i in range(len(x)):
-        tempMat = []
-        tempMat.append(x[i])
-        tempMat.append(y[i])
-        dataMat.append(tempMat)
-        labelMat.append(2)
-        gammaMat.append([0.33333,0.33333,0.333333])
-
-    plt.axis('equal')
     originalDataMat = dataMat
     plt.subplot(122)
     newLabelMat = GMM(dataMat, gammaMat)
@@ -197,8 +192,6 @@ if __name__=="__main__":
     for i in range(len(originalDataMat)):
         xi = originalDataMat[i][0]
         yi = originalDataMat[i][1]
-        # print xi, yi
-        print newLabelMat[i]
         if(newLabelMat[i] == 2):
             plt.plot(xi, yi, color='#ffdf00', linestyle='None', marker='o')
         if(newLabelMat[i] == 1):

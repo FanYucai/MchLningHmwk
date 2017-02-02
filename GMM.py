@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def phi(x, mu, cov):
-
     x = np.matrix(x)
     mu = np.matrix(mu)
     cov = np.matrix(cov)
@@ -12,7 +11,6 @@ def phi(x, mu, cov):
     x_mu = x-mu
     # print cov
     # s = -1.0/2 * x_mu * np.abs(np.linalg.inv(cov)) * x_mu.T
-
     if(np.linalg.det(cov) > 0):
         s = -1.0/2 * x_mu * np.linalg.inv(cov) * x_mu.T
         res = 1.0/((2*np.pi) * np.sqrt(np.linalg.det(cov))) * (np.power(np.e, s))
@@ -21,10 +19,17 @@ def phi(x, mu, cov):
         s = -1.0/2 * x_mu * np.linalg.inv(cov) * x_mu.T
         res = 1.0/((2*np.pi) * np.sqrt(np.linalg.det(cov))) * (np.power(np.e, s))
     else:
+        # s = -1.0/2 * x_mu * np.linalg.inv(cov) * x_mu.T
+        # cov = np.matrix([[np.random.random()*10, 0], [0, np.random.random()*10]])
+        # res =  (np.power(np.e, s))/(2*np.pi) *np.sqrt(np.linalg.det(cov))
+        mu = [np.matrix([np.random.random()*40., np.random.random()*40.]),
+          np.matrix([np.random.random()*40., np.random.random()*40.]),
+          np.matrix([np.random.random()*40., np.random.random()*40.])]
+        x_mu = x-mu[0]
+        cov += np.matrix([[np.random.random()*1e-6, 0], [0, 1e-6*np.random.random()]])
         s = -1.0/2 * x_mu * np.linalg.inv(cov) * x_mu.T
-        cov = np.matrix([[np.random.random()*10, 0], [0, np.random.random()*10]])
-        res = 1.0/((2*np.pi) *np.sqrt(np.linalg.det(cov))) * (np.power(np.e, s))
-        print 's =', s
+        res = 1.0/((2*np.pi) * np.sqrt(np.linalg.det(cov))) * (np.power(np.e, s))
+        # print 's =', s
 
     return res
 def genData(dataNum=30):
@@ -61,10 +66,10 @@ def GMM(dataMat, gammaMat, clusterNum=3):
     # gammaMat = np.matrix(gammaMat)
     Q = 0.
     preQ = 1.
-    epsilon = 1e-6
+    epsilon = 1e-10
 
     while True:
-        print 'cov:', cov
+        # print 'cov:', cov
         if(np.abs(Q-preQ)<epsilon):
             break
         preQ = Q
@@ -72,15 +77,17 @@ def GMM(dataMat, gammaMat, clusterNum=3):
         for n in range(dataNum):
             sum = 1e-300
             for k in range(K):
+                if(phi(dataMat[n], mu[k], cov[k]) > 1e300):
+                    print '----------------------'
+                    break
                 sum += float(alpha[k]*phi(dataMat[n], mu[k], cov[k]))
                 # print 'single:',alpha[k]*phi(dataMat[n], mu[k], cov[k])
 
             for k in range(K):
+                # print 'sum =', sum
                 gammaMat[n][k] = float(alpha[k]*phi(dataMat[n], mu[k], cov[k])/sum)
                 # print dataMat[n]
                 # print 'gamma:', gammaMat[n][k]
-
-
 
 #------------------------ E step end;   --------------------------------
 
@@ -116,12 +123,7 @@ def GMM(dataMat, gammaMat, clusterNum=3):
             sumqwq = 0.
             for k in range(clusterNum):
                 sumqwq += alpha[k]*phi(dataMat[n], mu[k], cov[k])
-                # print 'alphak:', alpha[k]
-                # print 'phi:', phi(dataMat[n], mu[k], cov[k])
-                # print 'sumqwq:', alpha[k]*phi(dataMat[n], mu[k], cov[k])
             sumQ += np.log(sumqwq)
-            # print 'log', float(phi(dataMat[n], mu[k], cov[k]))
-            # print 'sumQ:', sumQ
 
         Q = sumQ
 
@@ -135,7 +137,6 @@ def GMM(dataMat, gammaMat, clusterNum=3):
     return newLabelMat
 
 def findMax(gammaMat):
-    print 'gammaMat:', gammaMat
     a = gammaMat[0]
     res = 0
     if(a < gammaMat[1]):
@@ -155,7 +156,7 @@ if __name__=="__main__":
     plt.figure(figsize=(12,6), dpi=80)
     plt.subplot(121)
     x, y = genData(dataNum)
-    plt.plot(x, y, 'co')
+    plt.plot(x, y, color='#408d40', linestyle='None', marker='o')
 
     for i in range(len(x)):
         tempMat = []
@@ -163,7 +164,7 @@ if __name__=="__main__":
         tempMat.append(y[i])
         dataMat.append(tempMat)
         labelMat.append(0)
-        gammaMat.append([1.,0.,0.])
+        gammaMat.append([0.333333333,0.333333333,0.33333333])
 
     x, y = genData(dataNum)
     plt.plot(x, y, 'ro')
@@ -174,7 +175,7 @@ if __name__=="__main__":
         # print 'tempMat:', tempMat
         dataMat.append(tempMat)
         labelMat.append(1)
-        gammaMat.append([0.,1.,0.])
+        gammaMat.append([0.333333333,0.3333333333,0.333333333])
 
     x, y = genData(dataNum)
     plt.plot(x, y, color='#ffdf00', linestyle='None', marker='o')
@@ -186,12 +187,13 @@ if __name__=="__main__":
         tempMat.append(y[i])
         dataMat.append(tempMat)
         labelMat.append(2)
-        gammaMat.append([0.,0.,1.])
+        gammaMat.append([0.3333333333,0.33333333333,0.3333333333])
 
     plt.axis('equal')
     originalDataMat = dataMat
     plt.subplot(122)
     newLabelMat = GMM(dataMat, gammaMat)
+
     for i in range(len(originalDataMat)):
         xi = originalDataMat[i][0]
         yi = originalDataMat[i][1]
@@ -202,7 +204,7 @@ if __name__=="__main__":
         if(newLabelMat[i] == 1):
             plt.plot(xi, yi, 'ro')
         if(newLabelMat[i] == 0):
-            plt.plot(xi, yi, 'co')
+            plt.plot(xi, yi, color='#408d40', linestyle='None', marker='o')
     plt.axis('equal')
     # print dataMat
     plt.show()
